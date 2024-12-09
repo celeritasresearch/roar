@@ -44,8 +44,10 @@ training_params = dict(
     verbose=1,
     seed=1,
     device=th.device('cuda' if th.cuda.is_available() else 'cpu'),
-    policy_kwargs=dict(net_arch=dict(pi=[512, 512, 512], qf=[512, 512, 512])),
-    activation_fn=th.nn.ReLU,
+    policy_kwargs=dict(
+        net_arch=dict(pi=[512, 512, 512], qf=[512, 512, 512]),
+        activation_fn=th.nn.ReLU
+    ),
     buffer_size=1_000_000,
     train_freq=10,
     gradient_steps=1,
