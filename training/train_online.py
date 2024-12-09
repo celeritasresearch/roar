@@ -5,18 +5,17 @@ from stable_baselines3 import SAC
 from stable_baselines3.ppo.ppo import PPO
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder
-import wandb
-from wandb.integration.sb3 import WandbCallback
 import asyncio
 import nest_asyncio
 import os
 from pathlib import Path
 from typing import Optional, Dict
 import torch as th
-from typing import Dict, SupportsFloat, Union
+from typing import Dict, SupportsFloat, Union, Tuple
 from env_util import initialize_roar_env
 from roar_py_rl_carla import FlattenActionWrapper
 from stable_baselines3.common.callbacks import CheckpointCallback, EveryNTimesteps, CallbackList, BaseCallback
+import random
 
 RUN_FPS=25
 SUBSTEPS_PER_STEP = 5
@@ -72,75 +71,31 @@ def find_latest_model(root_path: Path) -> Optional[Path]:
     latest_model_file_path: Optional[Path] = Path(os.path.join(logs_path, paths_dict[max(paths_dict.keys())]))
     return latest_model_file_path
 
-def get_env(wandb_run) -> gym.Env:
+def get_env() -> Tuple[gym.Env, int]:
+    code = random.randint(0, 1000)
     env = asyncio.run(initialize_roar_env(control_timestep=1.0/RUN_FPS, physics_timestep=1.0/(RUN_FPS*SUBSTEPS_PER_STEP)))
     env = gym.wrappers.FlattenObservation(env)
     env = FlattenActionWrapper(env)
     env = gym.wrappers.TimeLimit(env, max_episode_steps = TIME_LIMIT)
     env = gym.wrappers.RecordEpisodeStatistics(env)
-    env = gym.wrappers.RecordVideo(env, f"videos/{wandb_run.name}", step_trigger=lambda x: x % VIDEO_SAVE_FREQ == 0)
-    env = Monitor(env, f"logs/{wandb_run.name}_{wandb_run.id}", allow_early_resets=True)
-    return env
+    env = gym.wrappers.RecordVideo(env, f"videos/run_{code}", step_trigger=lambda x: x % VIDEO_SAVE_FREQ == 0)
+    env = Monitor(env, f"logs/run_{code}", allow_early_resets=True)
+    print(f"using run identifier {code}")
+    return env, code
 
 def main():
-    wandb_run = wandb.init(
-        project="ROAR_PY_RL",
-        entity="roar",
-        name=run_name,
-        sync_tensorboard=True,
-        monitor_gym=True,
-        save_code=True
-    )
-    
-    env = get_env(wandb_run)
+    env, code = get_env()
 
-    models_path = f"models/{wandb_run.name}"
-    latest_model_path = find_latest_model(Path(models_path))
-    
-    if latest_model_path is None:
-        # create new models
-        model = SAC(
-            "MlpPolicy",
-            env,
-            # optimize_memory_usage=True,
-            replay_buffer_kwargs={"handle_timeout_termination": True},
-            **training_params
-        )
-    else:
-        # Load the model
-        print(f"reloading from {type(latest_model_path)} {latest_model_path}\n\n\n\n")
-        model = SAC.load( 
-            latest_model_path,
-            env=env,
-            # optimize_memory_usage=True,
-            # replay_buffer_kwargs={"handle_timeout_termination": False}
-            **training_params
-        )
-
-    wandb_callback=WandbCallback(
-        gradient_save_freq = MODEL_SAVE_FREQ,
-        model_save_path = f"models/{wandb_run.name}",
-        verbose = 2,
+    model = SAC(
+        "MlpPolicy",
+        env,
+        # optimize_memory_usage=True,
+        replay_buffer_kwargs={"handle_timeout_termination": True},
+        **training_params
     )
-    checkpoint_callback = CheckpointCallback(
-        save_freq = MODEL_SAVE_FREQ,
-        verbose = 2,
-        save_path = f"{models_path}/logs"
-    )
-    event_callback = EveryNTimesteps(
-        n_steps = MODEL_SAVE_FREQ,
-        callback=checkpoint_callback
-    )
-
-    callbacks = CallbackList([
-        wandb_callback,
-        checkpoint_callback, 
-        event_callback
-    ])
 
     model.learn(
         total_timesteps=1e7,
-        callback=callbacks,
         progress_bar=True,
         reset_num_timesteps=False,
     )
