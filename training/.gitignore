@@ -1,0 +1,8 @@
+# zip archives
+*.zip
+
+# Saved directories
+models/
+wandb/
+videos/
+logs/
