@@ -22,7 +22,6 @@ SUBSTEPS_PER_STEP = 5
 MODEL_SAVE_FREQ = 50_000
 VIDEO_SAVE_FREQ = 10_000
 TIME_LIMIT = RUN_FPS * 2 * 60
-run_name = "Denser_Waypoints_And_Collision_Detection"
 
 training_params = dict(
     learning_rate = 3e-5,  # be smaller 2.5e-4
@@ -45,7 +44,7 @@ training_params = dict(
     verbose=1,
     seed=1,
     device=th.device('cuda' if th.cuda.is_available() else 'cpu'),
-    net_arch=dict(pi=[512, 512, 512], qf=[512, 512, 512]),
+    policy_kwargs=dict(net_arch=dict(pi=[512, 512, 512], qf=[512, 512, 512])),
     activation_fn=th.nn.ReLU,
     buffer_size=1_000_000,
     train_freq=10,
