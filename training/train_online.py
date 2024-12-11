@@ -49,7 +49,6 @@ training_params = dict(
         activation_fn=th.nn.ReLU
     ),
     buffer_size=1_000_000,
-    train_freq=10,
     gradient_steps=1,
     tau=0.005
     # _init_setup_model=True,
