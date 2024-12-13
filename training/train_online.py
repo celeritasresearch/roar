@@ -17,7 +17,7 @@ from roar_py_rl_carla import FlattenActionWrapper
 from stable_baselines3.common.callbacks import CheckpointCallback, EveryNTimesteps, CallbackList, BaseCallback
 import random
 
-RUN_FPS=25
+RUN_FPS = 25
 SUBSTEPS_PER_STEP = 5
 MODEL_SAVE_FREQ = 50_000
 VIDEO_SAVE_FREQ = 10_000
@@ -45,7 +45,7 @@ training_params = dict(
     seed=1,
     device=th.device('cuda' if th.cuda.is_available() else 'cpu'),
     policy_kwargs=dict(
-        net_arch=dict(pi=[512, 512, 512], qf=[512, 512, 512]),
+        net_arch=dict(pi=[128, 256, 128], qf=[128, 256, 128]),
         activation_fn=th.nn.ReLU
     ),
     buffer_size=1_000_000,
@@ -94,10 +94,25 @@ def main():
         **training_params
     )
 
+    checkpoint_callback = CheckpointCallback(
+        save_freq = MODEL_SAVE_FREQ,
+        verbose = 2,
+        save_path = f"{models_path}/logs"
+    )
+    event_callback = EveryNTimesteps(
+        n_steps = MODEL_SAVE_FREQ,
+        callback = checkpoint_callback
+    )
+
+    callbacks = CallbackList([
+        checkpoint_callback, 
+        event_callback
+    ])
+
     model.learn(
-        total_timesteps=1e7,
-        progress_bar=True,
-        reset_num_timesteps=False,
+        total_timesteps = 1e7,
+        progress_bar = True,
+        reset_num_timesteps = False,
     )
 
 if __name__ == "__main__":
