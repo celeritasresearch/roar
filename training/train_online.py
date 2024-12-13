@@ -24,19 +24,17 @@ VIDEO_SAVE_FREQ = 10_000
 TIME_LIMIT = RUN_FPS * 2 * 60
 
 training_params = dict(
-    learning_rate = 3e-5,  # be smaller 2.5e-4
+    learning_rate = 1e-4,  # be smaller 2.5e-4
     #n_steps = 256 * RUN_FPS, #1024
-    batch_size=256,  # mini_batch_size = 256?
     # n_epochs=10,
     gamma=0.97,  # rec range .9 - .99 0.999997
-    ent_coef="auto",
-    target_entropy=-10.0,
+    ent_coef=0.01,
     # gae_lambda=0.95,
     # clip_range_vf=None,
     # vf_coef=0.5,
     # max_grad_norm=0.5,
     use_sde=True,
-    sde_sample_freq = RUN_FPS * 2,
+    sde_sample_freq = RUN_FPS,
     # target_kl=None,
     # tensorboard_log=(Path(misc_params["model_directory"]) / "tensorboard").as_posix(),
     # create_eval_env=False,
@@ -49,7 +47,7 @@ training_params = dict(
         activation_fn=th.nn.ReLU
     ),
     buffer_size=1_000_000,
-    gradient_steps=1,
+    gradient_steps=10,
     tau=0.005
     # _init_setup_model=True,
 )
