@@ -28,7 +28,7 @@ training_params = dict(
     #n_steps = 256 * RUN_FPS, #1024
     # n_epochs=10,
     gamma=0.97,  # rec range .9 - .99 0.999997
-    ent_coef=0.01,
+    ent_coef=0.05,
     # gae_lambda=0.95,
     # clip_range_vf=None,
     # vf_coef=0.5,
@@ -43,7 +43,7 @@ training_params = dict(
     seed=1,
     device=th.device('cuda' if th.cuda.is_available() else 'cpu'),
     policy_kwargs=dict(
-        net_arch=dict(pi=[128, 256, 128], qf=[128, 256, 128]),
+        net_arch=dict(pi=[256, 256], qf=[256, 256]),
         activation_fn=th.nn.ReLU
     ),
     buffer_size=1_000_000,
