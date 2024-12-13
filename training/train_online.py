@@ -97,7 +97,7 @@ def main():
     checkpoint_callback = CheckpointCallback(
         save_freq = MODEL_SAVE_FREQ,
         verbose = 2,
-        save_path = f"{models_path}/logs"
+        save_path = f"logs/"
     )
     event_callback = EveryNTimesteps(
         n_steps = MODEL_SAVE_FREQ,
