@@ -1,10 +1,14 @@
-from typing import List, Optional
-from roar_py_interface import RoarPyActor, RoarPySensor, RoarPyWaypoint, RoarPyWorld, RoarPyLocationInWorldSensor, RoarPyCollisionSensor, RoarPyVelocimeterSensor, RoarPyRollPitchYawSensor, RoarPyWaypointsTracker, RoarPyWaypointsProjection
+from typing import List, Optional, Any, Dict, SupportsFloat, Tuple, Set
+from roar_py_interface import (
+    RoarPyActor, RoarPySensor, RoarPyWaypoint, RoarPyWorld,
+    RoarPyLocationInWorldSensor, RoarPyCollisionSensor,
+    RoarPyVelocimeterSensor, RoarPyRollPitchYawSensor,
+    RoarPyWaypointsTracker, RoarPyWaypointsProjection
+)
 from .base_env import RoarRLEnv
-from typing import Any, Dict, SupportsFloat, Tuple, Optional, Set
 import gymnasium as gym
 import numpy as np
-from shapely import Polygon, Point
+from shapely.geometry import Polygon, Point
 from collections import OrderedDict
 
 def distance_to_waypoint_polygon(
@@ -106,25 +110,34 @@ class RoarRLSimEnv(RoarRLEnv):
             if sensor not in self.roar_py_actor.get_sensors()
         ]
 
-    def get_reward(self, observation : Any, action : Any, info_dict : Dict[str, Any]) -> SupportsFloat:
-        collision_impulse : np.ndarray = self.collision_sensor.get_last_gym_observation()
+    def get_reward(self, observation: Any, action: Any, info_dict: Dict[str, Any]) -> SupportsFloat:
+        collision_impulse: np.ndarray = self.collision_sensor.get_last_gym_observation()
         collision_impulse_norm = np.linalg.norm(collision_impulse)
-        
         
         collision_penalty = collision_impulse_norm / 10
         if collision_impulse_norm > self.collision_threshold:
-            return 0 # -collision_penalty
+            return 0  # Optionally, you can uncomment the penalty
+            # return -collision_penalty
 
         dist_to_projection = np.linalg.norm(self.location_sensor.get_last_gym_observation() - self._traced_projection_point.location)
         if self._delta_distance_travelled <= 0:
             normalized_rew = self._delta_distance_travelled * 10.0 * (0.2 * dist_to_projection + 1.0)
         else:
             normalized_rew = self._delta_distance_travelled * 10.0 / (0.2 * dist_to_projection + 1.0)
-        # if normalized_rew < 0:
-        #     return np.exp(normalized_rew) # Gaussian-like penalty for going backwards
-        # else:
-        #     return normalized_rew + 1
-        return normalized_rew #- collision_penalty
+        
+        # Extract throttle from action
+        if isinstance(action, dict):
+            throttle = action.get("throttle", 0.0)
+        else:
+            # If action is flattened, adjust the index based on action space
+            # Assuming 'throttle' is the first element
+            throttle = action[0] if len(action) > 0 else 0.0
+
+        # Add throttle incentive to the reward
+        throttle_incentive = throttle * 0.1  # Adjust the coefficient as needed
+        normalized_rew += throttle_incentive
+
+        return normalized_rew  # - collision_penalty
     
     def _perform_waypoint_trace(self, location: Optional[np.ndarray] = None) -> None:
         if location is None:
