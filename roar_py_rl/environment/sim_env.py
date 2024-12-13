@@ -134,7 +134,7 @@ class RoarRLSimEnv(RoarRLEnv):
             throttle = action[0] if len(action) > 0 else 0.0
 
         # Add throttle incentive to the reward
-        throttle_incentive = throttle * 0.1  # Adjust the coefficient as needed
+        throttle_incentive = throttle * 0.25
         normalized_rew += throttle_incentive
 
         return normalized_rew  # - collision_penalty
